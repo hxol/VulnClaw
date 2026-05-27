@@ -216,7 +216,11 @@ class MCPLifecycleManager:
     def _try_attach_stdio_client(self, name: str, config: MCPServerConfig) -> bool:
         """Attempt a real stdio MCP attach when SDK primitives are available."""
         transport = config.transport
-        if ClientSession is None or StdioServerParameters is None or stdio_client is None:
+        probe_overridden = "_probe_stdio_server" in self.__dict__
+        if (
+            not probe_overridden
+            and (ClientSession is None or StdioServerParameters is None or stdio_client is None)
+        ):
             self.registry.set_server_error(
                 name, "MCP Python SDK is not installed", error_type="sdk_unavailable"
             )

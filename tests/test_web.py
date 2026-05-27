@@ -658,7 +658,7 @@ class TestWebApp:
         assert web_app.resolve_web_asset("assets/app.js") == dist_dir / "index.html"
 
     def test_frontend_scaffold_exists(self):
-        root = Path("C:/Users/UncleC/Desktop/VulnClaw/frontend")
+        root = Path(__file__).resolve().parents[1] / "frontend"
         assert (root / "package.json").exists()
         assert (root / "vite.config.ts").exists()
         assert (root / "src" / "main.tsx").exists()
