@@ -63,15 +63,15 @@ export function AppShell<T extends string>({
         {backendUnavailable && (
           <section className="connection-banner" role="status">
             <div>
-              <strong>无法连接 VulnClaw 后端</strong>
+              <strong>Backend unavailable</strong>
               <span>
-                请确认已运行 <code>vulnclaw web</code>，并通过后端地址打开 Web UI。当前页面只能展示静态界面。
+                Start <code>vulnclaw web</code> and open the local address to load the live console.
               </span>
               {backendError && <small>{backendError}</small>}
             </div>
             {onRetryBackend && (
               <button className="secondary-btn" onClick={onRetryBackend} type="button">
-                重新连接
+                Retry
               </button>
             )}
           </section>

@@ -15,7 +15,7 @@ interface HistoryPageProps {
 }
 
 function formatTime(value?: string): string {
-  if (!value) return "未知时间";
+  if (!value) return "Unknown";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
@@ -27,16 +27,10 @@ function diffConclusion(diff: {
   added_steps: string[];
   added_recon_assets: string[];
 }): string {
-  const total =
-    diff.added_findings.length
-    + diff.updated_findings.length
-    + diff.added_steps.length
-    + diff.added_recon_assets.length;
-  if (diff.added_findings.length || diff.updated_findings.length) {
-    return "风险内容发生变化，建议回到风险结果页复核影响范围。";
-  }
-  if (total > 0) return "检查过程有新增信息，但暂未看到风险项变化。";
-  return "两次快照之间暂无明显新增内容。";
+  const total = diff.added_findings.length + diff.updated_findings.length + diff.added_steps.length + diff.added_recon_assets.length;
+  if (diff.added_findings.length || diff.updated_findings.length) return "Risk data changed.";
+  if (total > 0) return "The scan added new context.";
+  return "No obvious delta between the snapshots.";
 }
 
 export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpenReports, onOpenTarget }: HistoryPageProps) {
@@ -93,7 +87,7 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
       setError(null);
       setMessage(null);
       await rollbackTarget(targetValue, snapshotId);
-      setMessage(`已恢复 ${targetValue} 到快照 ${snapshotId}`);
+      setMessage(`Restored ${targetValue} to ${snapshotId}.`);
       await Promise.all([
         snapshotsQuery.refetch(),
         targetsQuery.refetch(),
@@ -102,7 +96,7 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
         queryClient.invalidateQueries({ queryKey: ["target-diff", targetValue] }),
       ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "快照恢复失败");
+      setError(err instanceof Error ? err.message : "Snapshot restore failed");
     } finally {
       setBusySnapshot(null);
     }
@@ -111,12 +105,11 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
   return (
     <section className="history-page">
       <SectionCard
-        title="历史记录"
-        copy="整合任务记录、目标状态和快照恢复。普通用户看时间线，高级用户再展开差异。"
-        aside={<span className="status-badge">{targetTasks.length} 条任务</span>}
+        title="History"
+        aside={<span className="status-badge">{targetTasks.length} tasks</span>}
       >
         <label className="field">
-          <span>目标</span>
+          <span>Target</span>
           <select
             value={targetValue ?? ""}
             onChange={(event) => {
@@ -127,7 +120,7 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
               setError(null);
             }}
           >
-            <option value="">全部目标</option>
+            <option value="">All targets</option>
             {targetsQuery.data?.map((target) => (
               <option key={target.target} value={target.target}>
                 {target.target}
@@ -138,15 +131,15 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
 
         <div className="history-summary-grid">
           <article className="stat">
-            <span className="stat-label">任务记录</span>
+            <span className="stat-label">Tasks</span>
             <strong>{targetTasks.length}</strong>
           </article>
           <article className="stat">
-            <span className="stat-label">目标状态</span>
+            <span className="stat-label">Targets</span>
             <strong>{targetsQuery.data?.length ?? 0}</strong>
           </article>
           <article className="stat">
-            <span className="stat-label">当前快照</span>
+            <span className="stat-label">Snapshots</span>
             <strong>{snapshotsQuery.data?.length ?? 0}</strong>
           </article>
         </div>
@@ -156,72 +149,57 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
       </SectionCard>
 
       <div className="history-grid">
-        <SectionCard title="测试记录" copy="最近通过 Web 后端任务管理器创建的检查。">
+        <SectionCard title="Tasks">
           <div className="list list-scroll history-list">
             {targetTasks.slice(0, 18).map((task) => (
-              <article
-                key={task.task_id}
-                className="list-item history-task-item"
-              >
+              <article key={task.task_id} className="list-item history-task-item">
                 <strong>{formatTaskTitle(task.command, task.target)}</strong>
                 <span>{formatTaskStatus(task.status)}</span>
                 <span className="muted-inline">{formatPhaseLabel(task.latest_phase)}</span>
                 <span className="muted-inline">{formatTime(task.created_at)}</span>
                 <div className="button-row compact-row">
                   <button className="secondary-btn" type="button" onClick={() => onOpenTarget(task.target)}>
-                    查看风险
+                    Open results
                   </button>
                   <button className="secondary-btn" type="button" onClick={() => onOpenReports(task.target)}>
-                    查看报告
+                    Open reports
                   </button>
                 </div>
               </article>
             ))}
             {!targetTasks.length && (
               <div className="empty-state history-empty-state">
-                <strong>暂无任务记录</strong>
-                <span>从首页开始一次授权安全检查后，任务时间线会自动汇总到这里。</span>
+                <strong>No task history</strong>
                 <button className="secondary-btn" onClick={onOpenHome} type="button">
-                  回首页开始检查
+                  New scan
                 </button>
               </div>
             )}
           </div>
         </SectionCard>
 
-        <SectionCard title="目标状态" copy="从目标状态继续查看风险结论，或直接进入报告中心生成交付物。">
+        <SectionCard title="Targets">
           <div className="list list-scroll history-list">
             {targetsQuery.data?.slice(0, 18).map((target) => (
-              <article
-                key={target.target}
-                className={`list-item ${targetValue === target.target ? "selected-item" : ""}`}
-              >
+              <article key={target.target} className={`list-item ${targetValue === target.target ? "selected-item" : ""}`}>
                 <strong>{target.target}</strong>
-                <span>{target.verified_count} 已验证 / {target.pending_count} 待复核</span>
+                <span>{target.verified_count} verified / {target.pending_count} pending</span>
                 <span className="muted-inline">{formatResumeStrategy(target.resume_strategy)}</span>
                 <div className="button-row compact-row">
-                  <button
-                    className="secondary-btn"
-                    type="button"
-                    onClick={() => {
-                      onSelectTarget(target.target);
-                      onOpenTarget(target.target);
-                    }}
-                  >
-                    查看风险
+                  <button className="secondary-btn" type="button" onClick={() => { onSelectTarget(target.target); onOpenTarget(target.target); }}>
+                    Open results
                   </button>
                   <button className="secondary-btn" type="button" onClick={() => onOpenReports(target.target)}>
-                    查看报告
+                    Open reports
                   </button>
                 </div>
               </article>
             ))}
             {!targetsQuery.data?.length && (
               <div className="empty-state history-empty-state">
-                <strong>暂无目标状态</strong>
-                <span>输入授权目标并完成检查后，这里会显示风险结论、恢复建议和报告入口。</span>
+                <strong>No target state</strong>
                 <button className="secondary-btn" onClick={onOpenHome} type="button">
-                  去首页设置目标
+                  New scan
                 </button>
               </div>
             )}
@@ -230,16 +208,14 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
       </div>
 
       <div className="history-grid">
-        <SectionCard title="快照恢复" copy="高级恢复能力默认放在历史页，不打扰首页检查流程。">
+        <SectionCard title="Snapshots">
           <div className="list list-scroll history-list">
             {snapshotsQuery.data?.map((snapshot) => (
               <div key={snapshot.snapshot_id} className="list-item">
                 <strong>{snapshot.snapshot_id}</strong>
                 <span>{formatTaskCommand(snapshot.last_command)}</span>
                 <span className="muted-inline">{formatTime(snapshot.last_saved_at)}</span>
-                <span className="muted-inline">
-                  已验证 {snapshot.verified_findings} / 待复核 {snapshot.pending_findings}
-                </span>
+                <span className="muted-inline">Verified {snapshot.verified_findings} / Pending {snapshot.pending_findings}</span>
                 <div className="button-row compact-row">
                   <button
                     className="secondary-btn"
@@ -247,23 +223,23 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
                     onClick={() => setPendingRollbackId(snapshot.snapshot_id)}
                     type="button"
                   >
-                    {busySnapshot === snapshot.snapshot_id ? "恢复中..." : "恢复到此快照"}
+                    {busySnapshot === snapshot.snapshot_id ? "Restoring..." : "Restore"}
                   </button>
                 </div>
               </div>
             ))}
             {!snapshotsQuery.data?.length && (
-              <div className="empty-state">{targetValue ? "该目标暂无快照。" : "请选择目标查看快照。"}</div>
+              <div className="empty-state">{targetValue ? "No snapshots for this target." : "Choose a target to view snapshots."}</div>
             )}
           </div>
         </SectionCard>
 
-        <SectionCard title="快照差异" copy="用于判断两次检查之间新增了哪些发现、步骤和资产。">
+        <SectionCard title="Diff">
           <div className="form-grid compact-form">
             <label className="field">
-              <span>从快照</span>
+              <span>From</span>
               <select value={fromSnapshotId ?? ""} onChange={(event) => setFromSnapshotId(event.target.value || null)}>
-                <option value="">选择</option>
+                <option value="">Select</option>
                 {snapshotsQuery.data?.map((snapshot) => (
                   <option key={`from-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>
                     {snapshot.snapshot_id}
@@ -272,9 +248,9 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
               </select>
             </label>
             <label className="field">
-              <span>到快照</span>
+              <span>To</span>
               <select value={toSnapshotId ?? ""} onChange={(event) => setToSnapshotId(event.target.value || null)}>
-                <option value="">当前状态</option>
+                <option value="">Current</option>
                 {snapshotsQuery.data?.map((snapshot) => (
                   <option key={`to-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>
                     {snapshot.snapshot_id}
@@ -289,41 +265,41 @@ export function HistoryPage({ selectedTarget, onSelectTarget, onOpenHome, onOpen
               <div className="history-diff-summary">
                 <strong>{diffConclusion(diffQuery.data)}</strong>
                 <div>
-                  <span>新增风险 {diffQuery.data.added_findings.length}</span>
-                  <span>更新风险 {diffQuery.data.updated_findings.length}</span>
-                  <span>新增步骤 {diffQuery.data.added_steps.length}</span>
-                  <span>新增资产 {diffQuery.data.added_recon_assets.length}</span>
+                  <span>Findings {diffQuery.data.added_findings.length}</span>
+                  <span>Updated {diffQuery.data.updated_findings.length}</span>
+                  <span>Steps {diffQuery.data.added_steps.length}</span>
+                  <span>Assets {diffQuery.data.added_recon_assets.length}</span>
                 </div>
               </div>
               <div className="list-item">
-                <strong>新增风险</strong>
-                {diffQuery.data.added_findings.length ? diffQuery.data.added_findings.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">无</span>}
+                <strong>Added findings</strong>
+                {diffQuery.data.added_findings.length ? diffQuery.data.added_findings.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">None</span>}
               </div>
               <div className="list-item">
-                <strong>更新风险</strong>
-                {diffQuery.data.updated_findings.length ? diffQuery.data.updated_findings.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">无</span>}
+                <strong>Updated findings</strong>
+                {diffQuery.data.updated_findings.length ? diffQuery.data.updated_findings.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">None</span>}
               </div>
               <div className="list-item">
-                <strong>新增步骤</strong>
-                {diffQuery.data.added_steps.length ? diffQuery.data.added_steps.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">无</span>}
+                <strong>Added steps</strong>
+                {diffQuery.data.added_steps.length ? diffQuery.data.added_steps.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">None</span>}
               </div>
               <div className="list-item">
-                <strong>新增资产</strong>
-                {diffQuery.data.added_recon_assets.length ? diffQuery.data.added_recon_assets.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">无</span>}
+                <strong>Added assets</strong>
+                {diffQuery.data.added_recon_assets.length ? diffQuery.data.added_recon_assets.map((item) => <span key={item}>{item}</span>) : <span className="muted-inline">None</span>}
               </div>
             </div>
           ) : (
-            <div className="empty-state">{diffQuery.isLoading ? "正在加载差异..." : "请选择快照进行比较。"}</div>
+            <div className="empty-state">{diffQuery.isLoading ? "Loading diff..." : "Pick snapshots to compare."}</div>
           )}
         </SectionCard>
       </div>
 
       <ConfirmDialog
         open={Boolean(pendingRollbackId)}
-        title="恢复历史快照"
-        copy="恢复快照会把当前目标状态切回所选时间点。这个动作不会删除报告文件，但可能影响后续风险结果展示。"
+        title="Restore snapshot"
+        copy="Restoring a snapshot rolls the current target state back to the selected point."
         tone="danger"
-        confirmLabel="确认恢复"
+        confirmLabel="Restore"
         onCancel={() => setPendingRollbackId(null)}
         onConfirm={() => {
           const snapshotId = pendingRollbackId;

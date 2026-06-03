@@ -10,7 +10,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-export function ConfirmDialog({ open, title, copy, tone = "primary", confirmLabel = "确认", onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, title, copy, tone = "primary", confirmLabel = "Confirm", onConfirm, onCancel }: ConfirmDialogProps) {
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -31,12 +31,12 @@ export function ConfirmDialog({ open, title, copy, tone = "primary", confirmLabe
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={onCancel}>
       <section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-copy" onMouseDown={(event) => event.stopPropagation()}>
-        <span className="dialog-kicker">需要确认</span>
+        <span className="dialog-kicker">Confirmation required</span>
         <h3 id="confirm-title">{title}</h3>
         <p id="confirm-copy" className="confirm-copy">{copy}</p>
         <div className="button-row compact-row">
           <button ref={cancelButtonRef} type="button" className="secondary-btn" onClick={onCancel}>
-            取消
+            Cancel
           </button>
           <button type="button" className={tone === "danger" ? "danger-btn" : "primary-btn"} onClick={onConfirm}>
             {confirmLabel}

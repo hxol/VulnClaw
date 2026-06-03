@@ -37,8 +37,8 @@ export function ToastHost({ toasts, onDismiss }: ToastHostProps) {
               </button>
             )}
           </div>
-          <button type="button" className="toast-close-btn" aria-label="关闭通知" onClick={() => onDismiss(toast.id)}>
-            ×
+          <button type="button" className="toast-close-btn" aria-label="Close notification" onClick={() => onDismiss(toast.id)}>
+            x
           </button>
         </article>
       ))}

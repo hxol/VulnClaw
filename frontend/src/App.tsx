@@ -17,6 +17,7 @@ import { formatTaskTitle } from "./utils/taskLabels";
 
 type AppView = "home" | "risk" | "reports" | "boundary" | "history" | "settings" | "advanced";
 type SettingsSection = "basic" | "ai" | "checks" | "boundary" | "data" | "python" | "diagnostics";
+
 interface ReportFocus {
   target: string | null;
   path?: string;
@@ -25,39 +26,39 @@ interface ReportFocus {
 
 const VIEW_META: Record<AppView, { eyebrow: string; title: string; copy: string }> = {
   home: {
-    eyebrow: "授权安全检查",
-    title: "首页",
-    copy: "输入授权目标、确认测试范围，然后启动一次受控检查。",
+    eyebrow: "SCAN",
+    title: "New Scan",
+    copy: "Enter a target and start.",
   },
   risk: {
-    eyebrow: "结果与证据",
-    title: "风险结果",
-    copy: "查看检查结论、已验证风险、待复核线索和下一步建议。",
+    eyebrow: "RESULTS",
+    title: "Findings",
+    copy: "Verified risks and evidence.",
   },
   reports: {
-    eyebrow: "可读交付物",
-    title: "报告",
-    copy: "生成并预览 Markdown / HTML 安全测试报告。",
+    eyebrow: "REPORTS",
+    title: "Reports",
+    copy: "Preview and export.",
   },
   boundary: {
-    eyebrow: "授权范围保护",
-    title: "安全边界",
-    copy: "查看当前测试范围、越界拦截和规则来源记录。",
+    eyebrow: "SCOPE",
+    title: "Boundary",
+    copy: "Scope limits and blocked actions.",
   },
   history: {
-    eyebrow: "过程回溯",
-    title: "历史",
-    copy: "查看目标快照、状态变化和可恢复检查记录。",
+    eyebrow: "LOG",
+    title: "History",
+    copy: "Tasks and snapshots.",
   },
   settings: {
-    eyebrow: "偏好与连接",
-    title: "设置",
-    copy: "配置 AI 模型、工具链和运行偏好。",
+    eyebrow: "CONFIG",
+    title: "Settings",
+    copy: "Runtime defaults.",
   },
   advanced: {
-    eyebrow: "高级诊断",
-    title: "任务控制台",
-    copy: "保留原始任务参数、实时事件和调试入口，方便高级用户排查。",
+    eyebrow: "CONTROL",
+    title: "Task Console",
+    copy: "Raw task controls.",
   },
 };
 
@@ -94,12 +95,12 @@ export function App() {
 
   const nav = useMemo(
     () => [
-      { key: "home" as const, label: "首页", description: "开始安全检查", icon: "◇" },
-      { key: "risk" as const, label: "风险结果", description: "证据与建议", icon: "!" },
-      { key: "reports" as const, label: "报告", description: "预览与导出", icon: "□" },
-      { key: "boundary" as const, label: "安全边界", description: "范围与拦截", icon: "◎" },
-      { key: "history" as const, label: "历史", description: "快照与回溯", icon: "↺" },
-      { key: "settings" as const, label: "设置", description: "模型与工具链", icon: "⚙" },
+      { key: "home" as const, label: "Scan", description: "", icon: "/icons/sidebar/scan.svg" },
+      { key: "risk" as const, label: "Findings", description: "", icon: "/icons/sidebar/findings.svg" },
+      { key: "reports" as const, label: "Reports", description: "", icon: "/icons/sidebar/reports.svg" },
+      { key: "boundary" as const, label: "Scope", description: "", icon: "/icons/sidebar/scope.svg" },
+      { key: "history" as const, label: "History", description: "", icon: "/icons/sidebar/history.svg" },
+      { key: "settings" as const, label: "Settings", description: "", icon: "/icons/sidebar/settings.svg" },
     ],
     [],
   );
@@ -107,9 +108,7 @@ export function App() {
   const latestEvent = taskEvents.length > 0 ? taskEvents[taskEvents.length - 1] : null;
 
   useEffect(() => {
-    function handleHashChange() {
-      setActiveView(viewFromHash());
-    }
+    const handleHashChange = () => setActiveView(viewFromHash());
     handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
@@ -125,7 +124,7 @@ export function App() {
 
   function eventSummary(event: TaskEvent): TaskSummary | null {
     const summary = event.payload.summary;
-    return summary && typeof summary === "object" ? summary as TaskSummary : null;
+    return summary && typeof summary === "object" ? (summary as TaskSummary) : null;
   }
 
   function pushToast(
@@ -159,14 +158,18 @@ export function App() {
       setTaskEvents((prev) => [...prev.slice(-79), event]);
       if (event.event === "task_completed") {
         const summary = eventSummary(event);
-        setActiveTask((prev) => prev && prev.task_id === event.task_id ? { ...prev, status: "completed", summary: summary ?? prev.summary } : prev);
+        setActiveTask((prev) =>
+          prev && prev.task_id === event.task_id
+            ? { ...prev, status: "completed", summary: summary ?? prev.summary }
+            : prev,
+        );
         refreshTaskData(summary?.target ?? activeTask.target);
         pushToast(
           "success",
-          "安全检查已完成",
-          "可以查看风险结果或生成报告。",
+          "Task finished",
+          "Review the risk results or generate a report.",
           {
-            actionLabel: "查看风险结果",
+            actionLabel: "Open results",
             onAction: () => {
               setSelectedTarget(summary?.target ?? activeTask.target);
               navigateToView("risk");
@@ -175,22 +178,17 @@ export function App() {
         );
       }
       if (event.event === "task_failed") {
-        setActiveTask((prev) => prev && prev.task_id === event.task_id ? { ...prev, status: "failed" } : prev);
+        setActiveTask((prev) => (prev && prev.task_id === event.task_id ? { ...prev, status: "failed" } : prev));
         refreshTaskData(activeTask.target);
-        pushToast(
-          "error",
-          "安全检查失败",
-          String(event.payload.message ?? event.payload.error ?? "请在高级控制台查看技术日志。"),
-          {
-            actionLabel: "查看技术日志",
-            onAction: () => navigateToView("advanced"),
-          },
-        );
+        pushToast("error", "Task failed", String(event.payload.message ?? event.payload.error ?? "Check advanced logs."), {
+          actionLabel: "Open console",
+          onAction: () => navigateToView("advanced"),
+        });
       }
       if (event.event === "task_stopped") {
-        setActiveTask((prev) => prev && prev.task_id === event.task_id ? { ...prev, status: "stopped" } : prev);
+        setActiveTask((prev) => (prev && prev.task_id === event.task_id ? { ...prev, status: "stopped" } : prev));
         refreshTaskData(activeTask.target);
-        pushToast("info", "安全检查已停止", "已保存的状态和报告不会被删除。");
+        pushToast("info", "Task stopped", "Saved state and reports remain available.");
       }
     });
     return () => source.close();
@@ -201,16 +199,16 @@ export function App() {
     setActiveTask(task);
     setSelectedTarget(task.target);
     setTaskEvents([]);
-    pushToast("success", "安全检查已启动", formatTaskTitle(task.command, task.target));
+    pushToast("success", "Task started", formatTaskTitle(task.command, task.target));
     return task;
   }
 
   async function handleStopTask() {
     if (!activeTask) return;
     await stopTask(activeTask.task_id);
-    setActiveTask((prev) => prev ? { ...prev, status: "stopped" } : prev);
+    setActiveTask((prev) => (prev ? { ...prev, status: "stopped" } : prev));
     refreshTaskData(activeTask.target);
-    pushToast("info", "停止请求已发送", "VulnClaw 正在结束当前任务。");
+    pushToast("info", "Stop request sent", "VulnClaw is ending the current task.");
   }
 
   function openBoundaryForActiveTask() {
@@ -285,9 +283,7 @@ export function App() {
         />
       )}
 
-      {activeView === "reports" && (
-        <ReportsPage selectedTarget={selectedTarget} focus={reportFocus} />
-      )}
+      {activeView === "reports" && <ReportsPage selectedTarget={selectedTarget} focus={reportFocus} />}
 
       {activeView === "boundary" && (
         <SafetyBoundaryPage
@@ -304,9 +300,7 @@ export function App() {
           selectedTarget={selectedTarget}
           onSelectTarget={setSelectedTarget}
           onOpenHome={() => navigateToView("home")}
-          onOpenReports={(target) => {
-            openReports(target);
-          }}
+          onOpenReports={(target) => openReports(target)}
           onOpenTarget={(target) => {
             setSelectedTarget(target);
             navigateToView("risk");
@@ -314,9 +308,7 @@ export function App() {
         />
       )}
 
-      {activeView === "settings" && (
-        <SettingsPage initialSection={settingsSection} onOpenAdvanced={() => navigateToView("advanced")} />
-      )}
+      {activeView === "settings" && <SettingsPage initialSection={settingsSection} onOpenAdvanced={() => navigateToView("advanced")} />}
 
       {activeView === "advanced" && (
         <TaskConsolePage
@@ -340,10 +332,10 @@ export function App() {
 
       <ConfirmDialog
         open={stopConfirmOpen}
-        title="停止当前安全检查"
-        copy="停止后当前任务不会继续执行，已经保存的目标状态和报告不会被删除。确认要停止吗？"
+        title="Stop current scan?"
+        copy="Stopping will end the current task, but saved state and reports will remain available."
         tone="danger"
-        confirmLabel="停止任务"
+        confirmLabel="Stop task"
         onCancel={() => setStopConfirmOpen(false)}
         onConfirm={() => {
           setStopConfirmOpen(false);

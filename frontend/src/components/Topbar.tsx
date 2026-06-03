@@ -18,7 +18,7 @@ function statusTone(status?: string): "idle" | "ok" | "warn" | "danger" | "runni
 }
 
 export function Topbar({ eyebrow, title, copy, selectedTarget, activeTaskStatus }: TopbarProps) {
-  const targetLabel = selectedTarget ? `当前目标: ${selectedTarget}` : "未选择目标";
+  const targetLabel = selectedTarget ? `Target: ${selectedTarget}` : "No target selected";
 
   return (
     <header className="topbar">
@@ -28,7 +28,7 @@ export function Topbar({ eyebrow, title, copy, selectedTarget, activeTaskStatus 
         <p>{copy}</p>
       </div>
       <div className="topbar-status">
-        <StatusDot tone={statusTone(activeTaskStatus)} label={activeTaskStatus ? formatTaskStatus(activeTaskStatus) : "空闲"} />
+        <StatusDot tone={statusTone(activeTaskStatus)} label={activeTaskStatus ? formatTaskStatus(activeTaskStatus) : "Idle"} />
         <StatusDot tone={selectedTarget ? "ok" : "idle"} label={targetLabel} />
       </div>
     </header>

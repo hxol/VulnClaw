@@ -9,38 +9,38 @@ import { parseOptionalPort } from "../utils/validation";
 type SettingsSection = "basic" | "ai" | "checks" | "boundary" | "data" | "python" | "diagnostics";
 
 const SECTIONS: Array<{ key: SettingsSection; title: string; copy: string }> = [
-  { key: "basic", title: "基础设置", copy: "语言、体验和常用偏好" },
-  { key: "ai", title: "AI 模型", copy: "服务商、模型和接口地址" },
-  { key: "checks", title: "检查策略", copy: "轮次和持续检查参数" },
-  { key: "boundary", title: "安全边界默认值", copy: "首页检查向导会自动带出" },
-  { key: "data", title: "报告与数据", copy: "输出目录和交付物位置" },
-  { key: "python", title: "本地脚本辅助", copy: "受控脚本能力和执行审计" },
-  { key: "diagnostics", title: "高级诊断", copy: "MCP 工具链状态" },
+  { key: "basic", title: "Preferences", copy: "Local UI defaults" },
+  { key: "ai", title: "Model", copy: "Provider and endpoint" },
+  { key: "checks", title: "Scan Policy", copy: "Rounds and runtime" },
+  { key: "boundary", title: "Boundary", copy: "Default scope" },
+  { key: "data", title: "Data", copy: "Output paths" },
+  { key: "python", title: "Scripts", copy: "Local execution" },
+  { key: "diagnostics", title: "Diagnostics", copy: "MCP status" },
 ];
 
 const ACTION_OPTIONS = [
-  { value: "recon", copy: "信息收集和基础资产发现。" },
-  { value: "scan", copy: "服务入口识别与风险发现。" },
-  { value: "exploit", copy: "验证利用动作，需要明确授权。" },
-  { value: "persistent", copy: "多轮持续检查能力。" },
-  { value: "post_exploitation", copy: "后渗透动作，默认建议禁止。" },
+  { value: "recon", copy: "Asset discovery and public signal collection." },
+  { value: "scan", copy: "Service and entry-point discovery." },
+  { value: "exploit", copy: "Verification actions requiring approval." },
+  { value: "persistent", copy: "Multi-round continuous checks." },
+  { value: "post_exploitation", copy: "Post-exploitation actions, usually blocked." },
 ];
 
 const PYTHON_MODES = [
   {
     value: "safe",
-    label: "安全模式",
-    copy: "阻止文件 I/O、网络访问和系统调用，适合普通检查。",
+    label: "Safe",
+    copy: "Restricts file I/O, network access, and system calls.",
   },
   {
     value: "lab",
-    label: "靶场模式",
-    copy: "适合受控靶场或 CTF 环境，允许更多本地分析能力。",
+    label: "Lab",
+    copy: "Allows more local analysis for controlled labs.",
   },
   {
     value: "trusted-local",
-    label: "可信本地模式",
-    copy: "保留完整本地能力，只建议在明确授权和可信机器上使用。",
+    label: "Trusted local",
+    copy: "Full local capability for trusted authorized machines.",
   },
 ];
 
@@ -65,7 +65,7 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
   const [pythonExecuteMode, setPythonExecuteMode] = useState("trusted-local");
   const [pythonExecuteMaxLines, setPythonExecuteMaxLines] = useState(50);
   const [pythonExecuteAuditEnabled, setPythonExecuteAuditEnabled] = useState(true);
-  const [language, setLanguage] = useState<UiPreferences["language"]>("zh-CN");
+  const [language, setLanguage] = useState<UiPreferences["language"]>("en-US");
   const [defaultCheckMode, setDefaultCheckMode] = useState<UiPreferences["defaultCheckMode"]>("standard");
   const [reportFormat, setReportFormat] = useState<UiPreferences["reportFormat"]>("markdown");
   const [showTechnicalLogs, setShowTechnicalLogs] = useState(false);
@@ -95,9 +95,7 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
     setDefaultBlockActions(preferences.defaultBoundary.blockActions);
   }, []);
 
-  useEffect(() => {
-    setActiveSection(initialSection);
-  }, [initialSection]);
+  useEffect(() => setActiveSection(initialSection), [initialSection]);
 
   useEffect(() => {
     if (!configQuery.data) return;
@@ -117,10 +115,10 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
 
   const activeMeta = useMemo(() => SECTIONS.find((section) => section.key === activeSection) ?? SECTIONS[0], [activeSection]);
   const saveButtonLabel = activeSection === "basic"
-    ? "保存偏好"
+    ? "Save preferences"
     : activeSection === "boundary"
-      ? "保存默认边界"
-      : "保存设置";
+      ? "Save boundary"
+      : "Save settings";
 
   function saveLocalPreferences() {
     saveUiPreferences({
@@ -149,7 +147,7 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
       if (activeSection === "basic" || activeSection === "boundary") {
         if (activeSection === "boundary") parseOptionalPort(defaultOnlyPort);
         saveLocalPreferences();
-        setStatus(activeSection === "boundary" ? "安全边界默认值已保存" : "界面偏好已保存");
+        setStatus(activeSection === "boundary" ? "Boundary defaults saved." : "Preferences saved.");
         return;
       }
 
@@ -168,9 +166,9 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
         python_execute_audit_enabled: pythonExecuteAuditEnabled,
       });
       await configQuery.refetch();
-      setStatus("设置已保存");
+      setStatus("Settings saved.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "设置保存失败");
+      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -208,31 +206,28 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
         <SectionCard
           title={activeMeta.title}
           copy={activeMeta.copy}
-          aside={<span className="status-badge">{configQuery.data?.api_key_configured ? "API Key 已配置" : "未配置 API Key"}</span>}
+          aside={<span className="status-badge">{configQuery.data?.api_key_configured ? "API key set" : "No API key"}</span>}
         >
           {activeSection === "basic" && (
             <div className="form-grid">
               <label className="field">
-                <span>界面语言</span>
+                <span>Language</span>
                 <select value={language} onChange={(event) => setLanguage(event.target.value as UiPreferences["language"])}>
-                  <option value="zh-CN">简体中文（当前完整支持）</option>
-                  <option value="en-US">English（本地化预留）</option>
+                  <option value="en-US">English</option>
+                  <option value="zh-CN">Chinese</option>
                 </select>
-                <small>
-                  当前版本的 Web 界面以简体中文为主；选择 English 会先保存偏好，完整英文文案将在后续本地化中启用。
-                </small>
               </label>
               <label className="field">
-                <span>默认检查模式</span>
+                <span>Default scan mode</span>
                 <select value={defaultCheckMode} onChange={(event) => setDefaultCheckMode(event.target.value as UiPreferences["defaultCheckMode"])}>
-                  <option value="quick">快速摸底</option>
-                  <option value="standard">标准检查</option>
-                  <option value="deep">深度验证</option>
-                  <option value="continuous">持续检查</option>
+                  <option value="quick">Quick Recon</option>
+                  <option value="standard">Standard Scan</option>
+                  <option value="deep">Deep Scan</option>
+                  <option value="continuous">Continuous Scan</option>
                 </select>
               </label>
               <label className="field">
-                <span>默认报告格式</span>
+                <span>Default report format</span>
                 <select value={reportFormat} onChange={(event) => setReportFormat(event.target.value as UiPreferences["reportFormat"])}>
                   <option value="markdown">Markdown</option>
                   <option value="html">HTML</option>
@@ -240,13 +235,11 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
               </label>
               <label className="check-row">
                 <input checked={showTechnicalLogs} onChange={(event) => setShowTechnicalLogs(event.target.checked)} type="checkbox" />
-                <span>默认显示技术日志入口</span>
+                <span>Show raw event entry by default</span>
               </label>
               <div className="inline-panel field-wide">
-                <strong>说明</strong>
-                <p className="inline-note">
-                  这些 ToC 界面偏好保存在当前浏览器本地；AI、轮次、Python 执行等运行配置仍保存到 VulnClaw 后端配置。
-                </p>
+                <strong>Local only</strong>
+                <p className="inline-note">UI preferences are stored in this browser. Runtime settings are saved to the backend.</p>
               </div>
             </div>
           )}
@@ -254,19 +247,19 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
           {activeSection === "ai" && (
             <div className="form-grid">
               <label className="field">
-                <span>模型服务商</span>
+                <span>Provider</span>
                 <input value={provider} onChange={(event) => setProvider(event.target.value)} />
-                <small>对应后端 provider，例如 openai。</small>
+                <small>Backend provider id, for example openai.</small>
               </label>
               <label className="field">
-                <span>模型名称</span>
+                <span>Model</span>
                 <input value={model} onChange={(event) => setModel(event.target.value)} />
-                <small>例如 gpt-5.1、gpt-5.5 或你的兼容模型名。</small>
+                <small>Use the model name configured for your backend.</small>
               </label>
               <label className="field field-wide">
-                <span>接口地址</span>
+                <span>Base URL</span>
                 <input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
-                <small>兼容 OpenAI API 的 Base URL；留空时使用后端默认配置。</small>
+                <small>Leave blank to use the backend default.</small>
               </label>
             </div>
           )}
@@ -274,77 +267,65 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
           {activeSection === "checks" && (
             <div className="form-grid">
               <label className="field">
-                <span>最大轮次</span>
+                <span>Max rounds</span>
                 <input type="number" value={maxRounds} onChange={(event) => setMaxRounds(Number(event.target.value))} />
               </label>
               <label className="field">
-                <span>持续检查每周期轮次</span>
+                <span>Rounds per cycle</span>
                 <input type="number" value={persistentRounds} onChange={(event) => setPersistentRounds(Number(event.target.value))} />
               </label>
               <label className="field">
-                <span>持续检查最大周期</span>
+                <span>Max cycles</span>
                 <input type="number" value={persistentCycles} onChange={(event) => setPersistentCycles(Number(event.target.value))} />
               </label>
               <label className="check-row field-wide">
                 <input checked={showThinking} onChange={(event) => setShowThinking(event.target.checked)} type="checkbox" />
-                <span>显示 AI 思考输出</span>
+                <span>Show model reasoning output</span>
               </label>
-              <div className="inline-panel field-wide">
-                <strong>工具链概览</strong>
-                <p className="inline-note">
-                  普通检查会自动使用可用工具链；如需查看每个 MCP 服务的错误和调用统计，可进入高级诊断。
-                </p>
-              </div>
               <article className="stat">
-                <span className="stat-label">MCP 服务</span>
+                <span className="stat-label">MCP services</span>
                 <strong>{mcpQuery.data?.total_services ?? 0}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">可执行服务</span>
+                <span className="stat-label">Runnable</span>
                 <strong>{mcpQuery.data?.running_services ?? 0}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">工具数量</span>
+                <span className="stat-label">Tools</span>
                 <strong>{mcpQuery.data?.tool_count ?? 0}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">nmap 可用性</span>
-                <strong>随运行环境检测</strong>
+                <span className="stat-label">nmap</span>
+                <strong>Runtime check</strong>
               </article>
-              <div className="inline-panel field-wide">
-                <strong>保存说明</strong>
-                <p className="inline-note">
-                  检查策略会写入 VulnClaw 后端配置，影响后续任务运行；界面偏好和安全边界默认值则保存在当前浏览器本地。
-                </p>
-              </div>
             </div>
           )}
 
           {activeSection === "boundary" && (
             <div className="form-grid">
               <label className="field">
-                <span>默认仅测端口</span>
-                <input value={defaultOnlyPort} onChange={(event) => setDefaultOnlyPort(event.target.value)} inputMode="numeric" placeholder="例如 443" />
-                <small>留空表示每次检查时由首页手动填写。</small>
+                <span>Default port only</span>
+                <input value={defaultOnlyPort} onChange={(event) => setDefaultOnlyPort(event.target.value)} inputMode="numeric" placeholder="443" />
+                <small>Blank means set it per scan.</small>
               </label>
               <label className="field">
-                <span>默认仅测主机</span>
+                <span>Default host only</span>
                 <input value={defaultOnlyHost} onChange={(event) => setDefaultOnlyHost(event.target.value)} placeholder="example.com" />
               </label>
               <label className="field field-wide">
-                <span>默认仅测路径</span>
+                <span>Default path only</span>
                 <input value={defaultOnlyPath} onChange={(event) => setDefaultOnlyPath(event.target.value)} placeholder="/admin" />
               </label>
               <label className="field">
-                <span>默认排除主机</span>
+                <span>Default block host</span>
                 <input value={defaultBlockedHost} onChange={(event) => setDefaultBlockedHost(event.target.value)} placeholder="staging.example.com" />
               </label>
               <label className="field">
-                <span>默认排除路径</span>
+                <span>Default block path</span>
                 <input value={defaultBlockedPath} onChange={(event) => setDefaultBlockedPath(event.target.value)} placeholder="/internal" />
               </label>
               <div className="field field-wide">
-                <span>默认允许动作</span>
+                <span>Default allow actions</span>
                 <div className="action-choice-grid">
                   {ACTION_OPTIONS.map((action) => (
                     <button
@@ -360,7 +341,7 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
                 </div>
               </div>
               <div className="field field-wide">
-                <span>默认禁止动作</span>
+                <span>Default block actions</span>
                 <div className="action-choice-grid">
                   {ACTION_OPTIONS.map((action) => (
                     <button
@@ -376,16 +357,10 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
                 </div>
               </div>
               <div className="scope-summary field-wide">
-                <strong>首页会默认允许</strong>
+                <strong>Allow</strong>
                 <span>{formatActionList(defaultAllowActions)}</span>
-                <strong>首页会默认禁止</strong>
+                <strong>Block</strong>
                 <span>{formatActionList(defaultBlockActions)}</span>
-              </div>
-              <div className="inline-panel field-wide">
-                <strong>为什么放在设置里</strong>
-                <p className="inline-note">
-                  如果你经常只测试同一个端口、主机或路径，可以在这里固化默认边界。首页仍然允许临时调整，但不会让授权范围只依赖一次性输入。
-                </p>
               </div>
             </div>
           )}
@@ -393,12 +368,12 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
           {activeSection === "data" && (
             <div className="form-grid">
               <label className="field field-wide">
-                <span>输出目录</span>
+                <span>Output directory</span>
                 <input value={outputDir} onChange={(event) => setOutputDir(event.target.value)} />
               </label>
               <div className="inline-panel field-wide">
-                <strong>报告默认位置</strong>
-                <p className="inline-note">未显式指定时，报告由后端保存到 VulnClaw 用户配置目录的 sessions/report 文件中。</p>
+                <strong>Reports</strong>
+                <p className="inline-note">If not overridden, reports are written under the VulnClaw sessions report directory.</p>
               </div>
             </div>
           )}
@@ -407,14 +382,14 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
             <div className="form-grid">
               <label className="check-row">
                 <input checked={pythonExecuteEnabled} onChange={(event) => setPythonExecuteEnabled(event.target.checked)} type="checkbox" />
-                <span>启用本地脚本辅助</span>
+                <span>Enable local script helper</span>
               </label>
               <label className="check-row">
                 <input checked={pythonExecuteAuditEnabled} onChange={(event) => setPythonExecuteAuditEnabled(event.target.checked)} type="checkbox" />
-                <span>记录本地脚本执行审计</span>
+                <span>Record local script audit</span>
               </label>
               <div className="field field-wide">
-                <span>执行保护级别</span>
+                <span>Execution guard</span>
                 <div className="mode-grid settings-mode-grid">
                   {PYTHON_MODES.map((mode) => (
                     <button
@@ -430,60 +405,52 @@ export function SettingsPage({ initialSection = "basic", onOpenAdvanced }: Setti
                 </div>
               </div>
               <label className="field">
-                <span>最大输出行数</span>
+                <span>Max output lines</span>
                 <input type="number" value={pythonExecuteMaxLines} onChange={(event) => setPythonExecuteMaxLines(Number(event.target.value))} />
               </label>
-              <div className="inline-panel field-wide">
-                <strong>安全说明</strong>
-                <p className="inline-note">
-                  这里控制的是高级脚本辅助能力。普通网站自测建议保持“安全模式”；只有在靶场、CTF 或可信本机授权环境中，才建议切换到更开放的模式。
-                </p>
-              </div>
             </div>
           )}
 
           {activeSection === "diagnostics" && (
             <div className="diagnostics-grid">
               <div className="inline-panel field-wide">
-                <strong>需要原始任务参数或实时事件？</strong>
-                <p className="inline-note">
-                  普通检查流程会隐藏开发者控制台；排查任务、SSE 事件或约束参数时，可以进入高级任务控制台。
-                </p>
+                <strong>Need raw task inputs?</strong>
+                <p className="inline-note">Open the task console for SSE events, raw command parameters, and boundary debugging.</p>
                 <button className="secondary-btn" onClick={onOpenAdvanced} type="button">
-                  打开高级任务控制台
+                  Open task console
                 </button>
               </div>
               <article className="stat">
-                <span className="stat-label">MCP 服务</span>
+                <span className="stat-label">MCP services</span>
                 <strong>{mcpQuery.data?.total_services ?? 0}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">运行中</span>
+                <span className="stat-label">Running</span>
                 <strong>{mcpQuery.data?.running_services ?? 0}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">工具数</span>
+                <span className="stat-label">Tools</span>
                 <strong>{mcpQuery.data?.tool_count ?? 0}</strong>
               </article>
               <div className="list list-scroll diagnostics-list">
                 {mcpQuery.data?.services.map((service) => (
                   <div key={service.name} className="list-item">
                     <strong>{service.name}</strong>
-                    <span>状态: {formatMcpHealth(service.health_status)} · 运行方式: {formatMcpExecutionMode(service.execution_mode)} · 工具数: {service.tool_count}</span>
+                    <span>Status: {formatMcpHealth(service.health_status)} - Mode: {formatMcpExecutionMode(service.execution_mode)} - Tools: {service.tool_count}</span>
                     <span className="muted-inline">
-                      调用 {service.call_count} 次 · 成功 {service.success_count} 次 · 失败 {service.failure_count} 次
+                      Calls {service.call_count} - Success {service.success_count} - Failed {service.failure_count}
                     </span>
                     {service.error && <span className="danger-inline">{service.error}</span>}
                   </div>
                 ))}
-                {!mcpQuery.data?.services.length && <div className="empty-state">暂无 MCP 诊断数据。</div>}
+                {!mcpQuery.data?.services.length && <div className="empty-state">No MCP diagnostics yet.</div>}
               </div>
             </div>
           )}
 
           <div className="button-row">
             <button className="primary-btn" disabled={saving || activeSection === "diagnostics"} onClick={handleSave} type="button">
-              {saving ? "保存中..." : saveButtonLabel}
+              {saving ? "Saving..." : saveButtonLabel}
             </button>
           </div>
 

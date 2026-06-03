@@ -27,22 +27,22 @@ async function requestJson<T>(input: string, init?: RequestInit): Promise<T> {
       ...init,
     });
   } catch {
-    throw new Error("无法访问 VulnClaw 后端 API，请确认已运行 vulnclaw web 后重新连接。");
+    throw new Error("Unable to reach the VulnClaw backend API. Start `vulnclaw web` and reconnect.");
   }
 
   if (!response.ok) {
     const detail = await readErrorDetail(response);
     throw new Error(
       detail
-        ? `请求失败 (${response.status}): ${detail}`
-        : `请求失败 (${response.status})，请稍后重试或查看高级诊断。`,
+        ? `Request failed (${response.status}): ${detail}`
+        : `Request failed (${response.status}). Try again or open advanced diagnostics.`,
     );
   }
 
   try {
     return await response.json() as T;
   } catch {
-    throw new Error("后端 API 返回了非 JSON 内容，请确认已通过 vulnclaw web 启动后端服务。");
+    throw new Error("The backend API returned non-JSON content. Confirm the backend was started with `vulnclaw web`.");
   }
 }
 

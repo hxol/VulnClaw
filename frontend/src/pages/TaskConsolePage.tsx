@@ -16,11 +16,11 @@ import {
 import { parseOptionalPort } from "../utils/validation";
 
 const ACTION_OPTIONS = [
-  { value: "recon", copy: "信息收集与基础资产发现。" },
-  { value: "scan", copy: "服务入口识别与风险发现。" },
-  { value: "exploit", copy: "验证利用动作，需要明确授权。" },
-  { value: "persistent", copy: "多轮持续检查能力。" },
-  { value: "post_exploitation", copy: "后渗透动作，默认建议禁止。" },
+  { value: "recon", copy: "Asset discovery and public signal collection." },
+  { value: "scan", copy: "Service and entry-point discovery." },
+  { value: "exploit", copy: "Verification actions requiring approval." },
+  { value: "persistent", copy: "Multi-round continuous checks." },
+  { value: "post_exploitation", copy: "Post-exploitation actions, usually blocked." },
 ];
 
 interface TaskConsolePageProps {
@@ -35,7 +35,6 @@ export function TaskConsolePage({
   activeTask,
   events,
   onTaskCreated,
-  onEvent,
   onFocusTarget,
 }: TaskConsolePageProps) {
   const tasksQuery = useTasksQuery();
@@ -71,24 +70,23 @@ export function TaskConsolePage({
     block_actions: blockActions.length ? blockActions : undefined,
   });
   const runConfirmCopy = [
-    "你正在从高级控制台启动原始任务。请确认该目标已获得授权，并且下方测试范围没有超出授权边界。",
-    `目标: ${target.trim() || "未填写"}`,
-    `命令: ${formatTaskCommand(command)} (${command})`,
-    `范围: ${scopePreview}`,
-    "建议: 如不确定授权范围，请回到首页使用安全检查向导设置端口、主机或路径边界。",
+    "You are starting a raw task from the advanced console.",
+    `Target: ${target.trim() || "Not set"}`,
+    `Command: ${formatTaskCommand(command)} (${command})`,
+    `Scope: ${scopePreview}`,
+    "Confirm the target is authorized and the scope is correct.",
   ].join("\n");
 
   function renderEventText(item: TaskEvent): string {
     const payload = item.payload;
     const parts: string[] = [];
-    if (typeof payload.cycle === "number") parts.push(`第 ${payload.cycle} 个周期`);
-    if (typeof payload.round === "number") parts.push(`第 ${payload.round} 轮`);
+    if (typeof payload.cycle === "number") parts.push(`cycle ${payload.cycle}`);
+    if (typeof payload.round === "number") parts.push(`round ${payload.round}`);
     if (typeof payload.phase === "string") parts.push(formatPhaseLabel(payload.phase));
     const text = typeof payload.text === "string" ? payload.text : "";
     const message = typeof payload.message === "string" ? payload.message : "";
-    const summary = text || message || formatEventLabel(item.event);
-    parts.push(summary);
-    return parts.join(" · ");
+    parts.push(text || message || formatEventLabel(item.event));
+    return parts.join(" - ");
   }
 
   function eventTone(eventName: string): "ok" | "warn" | "danger" | "info" {
@@ -106,12 +104,9 @@ export function TaskConsolePage({
     oppositeSelected?: string[],
     setOppositeSelected?: (next: string[]) => void,
   ) {
-    setSelected(
-      selected.includes(value)
-        ? selected.filter((item) => item !== value)
-        : [...selected, value],
-    );
-    if (!selected.includes(value) && oppositeSelected && setOppositeSelected) {
+    const isSelected = selected.includes(value);
+    setSelected(isSelected ? selected.filter((item) => item !== value) : [...selected, value]);
+    if (!isSelected && oppositeSelected && setOppositeSelected) {
       setOppositeSelected(oppositeSelected.filter((item) => item !== value));
     }
   }
@@ -143,7 +138,7 @@ export function TaskConsolePage({
       }
       void handleRun();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "任务参数不正确");
+      setError(err instanceof Error ? err.message : "Invalid task parameters");
     }
   }
 
@@ -156,7 +151,7 @@ export function TaskConsolePage({
       onFocusTarget(task.target);
       await tasksQuery.refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "创建任务失败");
+      setError(err instanceof Error ? err.message : "Failed to create task");
     } finally {
       setSubmitting(false);
     }
@@ -168,7 +163,7 @@ export function TaskConsolePage({
       await stopTask(activeTask.task_id);
       await tasksQuery.refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "停止任务失败");
+      setError(err instanceof Error ? err.message : "Failed to stop task");
     }
   }
 
@@ -176,92 +171,72 @@ export function TaskConsolePage({
     <section className="card">
       <header className="card-header">
         <div>
-          <h3>高级任务控制台</h3>
-          <p>保留原始命令、SSE 事件和调试参数，建议高级用户在排查问题时使用。</p>
+          <h3>Task Console</h3>
+          <p>Raw command inputs, SSE events, and advanced task parameters.</p>
         </div>
         <span className="status-badge">{formatTaskStatus(activeTask?.status)}</span>
       </header>
 
       <div className="form-grid">
         <label className="field">
-          <span>原始命令</span>
+          <span>Command</span>
           <select value={command} onChange={(event) => setCommand(event.target.value as TaskCommand)}>
-            <option value="run">标准检查</option>
-            <option value="recon">快速摸底</option>
-            <option value="scan">深度扫描</option>
-            <option value="exploit">深度验证</option>
-            <option value="persistent">持续检查</option>
+            <option value="run">Standard Scan</option>
+            <option value="recon">Quick Recon</option>
+            <option value="scan">Deep Scan</option>
+            <option value="exploit">Verification</option>
+            <option value="persistent">Continuous Scan</option>
           </select>
-          <small>接口命令: {command}</small>
+          <small>API command: {command}</small>
         </label>
 
         <label className="field field-wide">
-          <span>目标</span>
-          <input value={target} onChange={(event) => setTarget(event.target.value)} placeholder="输入已授权目标，例如 https://target.example" />
+          <span>Target</span>
+          <input value={target} onChange={(event) => setTarget(event.target.value)} placeholder="https://target.example" />
         </label>
 
         <label className="check-row">
           <input checked={resume} onChange={(event) => setResume(event.target.checked)} type="checkbox" />
-          <span>沿用目标历史上下文</span>
+          <span>Resume target state</span>
         </label>
         <label className="field">
-          <span>最大轮次</span>
-          <input
-            type="number"
-            value={maxRounds}
-            onChange={(event) => setMaxRounds(event.target.value ? Number(event.target.value) : "")}
-            placeholder="使用后端默认值"
-          />
+          <span>Max rounds</span>
+          <input type="number" value={maxRounds} onChange={(event) => setMaxRounds(event.target.value ? Number(event.target.value) : "")} placeholder="Backend default" />
         </label>
         <label className="field">
-          <span>每周期轮次</span>
-          <input
-            type="number"
-            value={roundsPerCycle}
-            onChange={(event) => setRoundsPerCycle(event.target.value ? Number(event.target.value) : "")}
-            placeholder="仅持续检查"
-          />
+          <span>Rounds per cycle</span>
+          <input type="number" value={roundsPerCycle} onChange={(event) => setRoundsPerCycle(event.target.value ? Number(event.target.value) : "")} placeholder="Continuous only" />
         </label>
         <label className="field">
-          <span>最大周期</span>
-          <input
-            type="number"
-            value={maxCycles}
-            onChange={(event) => setMaxCycles(event.target.value ? Number(event.target.value) : "")}
-            placeholder="仅持续检查"
-          />
+          <span>Max cycles</span>
+          <input type="number" value={maxCycles} onChange={(event) => setMaxCycles(event.target.value ? Number(event.target.value) : "")} placeholder="Continuous only" />
         </label>
         <label className="field">
-          <span>CVE 提示</span>
-          <input value={cve} onChange={(event) => setCve(event.target.value)} placeholder="例如 CVE-2024-xxxx" />
+          <span>CVE hint</span>
+          <input value={cve} onChange={(event) => setCve(event.target.value)} placeholder="CVE-2024-xxxx" />
         </label>
         <label className="field">
-          <span>仅测试端口</span>
-          <input
-            inputMode="numeric"
-            value={onlyPort}
-            onChange={(event) => setOnlyPort(event.target.value)}
-            placeholder="例如 443"
-          />
+          <span>Port only</span>
+          <input inputMode="numeric" value={onlyPort} onChange={(event) => setOnlyPort(event.target.value)} placeholder="443" />
         </label>
         <label className="field">
-          <span>仅测试主机</span>
+          <span>Host only</span>
           <input value={onlyHost} onChange={(event) => setOnlyHost(event.target.value)} placeholder="example.com" />
         </label>
         <label className="field field-wide">
-          <span>仅测试路径</span>
+          <span>Path only</span>
           <input value={onlyPath} onChange={(event) => setOnlyPath(event.target.value)} placeholder="/admin" />
         </label>
         <label className="field">
-          <span>排除主机</span>
+          <span>Block host</span>
           <input value={blockedHost} onChange={(event) => setBlockedHost(event.target.value)} placeholder="staging.example.com" />
         </label>
         <label className="field">
-          <span>排除路径</span>
+          <span>Block path</span>
           <input value={blockedPath} onChange={(event) => setBlockedPath(event.target.value)} placeholder="/internal" />
         </label>
         <div className="field field-wide">
-          <span>允许动作</span>
+          <span>Allow actions</span>
           <div className="action-choice-grid">
             {ACTION_OPTIONS.map((action) => (
               <button
@@ -275,10 +250,10 @@ export function TaskConsolePage({
               </button>
             ))}
           </div>
-          <small>{formatActionList(allowActions, "未指定允许动作")}</small>
+          <small>{formatActionList(allowActions, "No explicit allow list")}</small>
         </div>
         <div className="field field-wide">
-          <span>禁止动作</span>
+          <span>Block actions</span>
           <div className="action-choice-grid">
             {ACTION_OPTIONS.map((action) => (
               <button
@@ -292,20 +267,20 @@ export function TaskConsolePage({
               </button>
             ))}
           </div>
-          <small>{formatActionList(blockActions, "未指定禁止动作")}</small>
+          <small>{formatActionList(blockActions, "No explicit block list")}</small>
         </div>
         <label className="field field-wide">
-          <span>命令提示</span>
-          <input value={cmd} onChange={(event) => setCmd(event.target.value)} placeholder="验证命令，例如 id" />
+          <span>Command hint</span>
+          <input value={cmd} onChange={(event) => setCmd(event.target.value)} placeholder="verification command, for example id" />
         </label>
       </div>
 
       <div className="button-row">
         <button className="primary-btn" disabled={submitting || !target.trim()} onClick={handleRunRequest} type="button">
-          {submitting ? "启动中..." : "启动原始任务"}
+          {submitting ? "Launching..." : "Launch raw task"}
         </button>
         <button className="secondary-btn" disabled={!activeTask || activeTask.status !== "running"} onClick={() => setConfirmStopOpen(true)} type="button">
-          停止任务
+          Stop task
         </button>
       </div>
 
@@ -313,10 +288,10 @@ export function TaskConsolePage({
 
       <ConfirmDialog
         open={confirmRunOpen}
-        title="确认启动高风险原始任务"
+        title="Confirm raw task"
         copy={runConfirmCopy}
         tone="danger"
-        confirmLabel="确认启动"
+        confirmLabel="Launch"
         onCancel={() => setConfirmRunOpen(false)}
         onConfirm={() => {
           setConfirmRunOpen(false);
@@ -326,10 +301,10 @@ export function TaskConsolePage({
 
       <ConfirmDialog
         open={confirmStopOpen}
-        title="确认停止当前任务"
-        copy={`停止后当前任务不会继续执行，已经保存的目标状态和报告不会被删除。\n目标: ${activeTask?.target ?? "未知目标"}\n任务: ${activeTask ? formatTaskTitle(activeTask.command, activeTask.target) : "未选择任务"}`}
+        title="Stop current task"
+        copy={`The current task will stop. Saved target state and reports remain available.\nTarget: ${activeTask?.target ?? "Unknown"}\nTask: ${activeTask ? formatTaskTitle(activeTask.command, activeTask.target) : "None"}`}
         tone="danger"
-        confirmLabel="确认停止"
+        confirmLabel="Stop"
         onCancel={() => setConfirmStopOpen(false)}
         onConfirm={() => {
           setConfirmStopOpen(false);
@@ -339,7 +314,7 @@ export function TaskConsolePage({
 
       <div className="split-grid inner-grid">
         <article className="card inset-card">
-          <h4>任务记录</h4>
+          <h4>Task log</h4>
           <div className="list list-scroll">
             {tasksQuery.data?.slice(0, 8).map((task) => (
               <button
@@ -359,33 +334,31 @@ export function TaskConsolePage({
                 )}
               </button>
             ))}
-            {!tasksQuery.data?.length && <div className="empty-state">暂无任务记录。</div>}
+            {!tasksQuery.data?.length && <div className="empty-state">No tasks yet.</div>}
           </div>
         </article>
 
         <article className="card inset-card">
-          <h4>实时事件流</h4>
+          <h4>Live event stream</h4>
           <div className="terminal terminal-scroll">
             {activeTask ? (
               <>
-                <div className="terminal-line">任务 ID: {activeTask.task_id}</div>
-                <div className="terminal-line">检查模式: {formatTaskCommand(activeTask.command)} ({activeTask.command})</div>
-                <div className="terminal-line">目标: {activeTask.target}</div>
-                <div className="terminal-line dim">阶段: {formatPhaseLabel(activeTask.latest_phase)}</div>
+                <div className="terminal-line">Task ID: {activeTask.task_id}</div>
+                <div className="terminal-line">Command: {formatTaskCommand(activeTask.command)} ({activeTask.command})</div>
+                <div className="terminal-line">Target: {activeTask.target}</div>
+                <div className="terminal-line dim">Phase: {formatPhaseLabel(activeTask.latest_phase)}</div>
                 {activeTask.summary?.constraints && Object.keys(activeTask.summary.constraints).length > 0 && (
-                  <div className="terminal-line dim">边界: {formatConstraintSummary(activeTask.summary.constraints)}</div>
+                  <div className="terminal-line dim">Boundary: {formatConstraintSummary(activeTask.summary.constraints)}</div>
                 )}
               </>
             ) : (
-              <div className="terminal-line dim">暂无运行中的任务。</div>
+              <div className="terminal-line dim">No running task.</div>
             )}
 
             {latestEvents.map((item) => (
               <div key={`${item.timestamp}-${item.event}`} className="terminal-line terminal-row">
                 <span className={`terminal-event tone-${eventTone(item.event)}`}>{formatEventLabel(item.event)}</span>
-                <span className="terminal-time">
-                  {new Date(item.timestamp).toLocaleTimeString()}
-                </span>
+                <span className="terminal-time">{new Date(item.timestamp).toLocaleTimeString()}</span>
                 <span>{renderEventText(item)}</span>
               </div>
             ))}

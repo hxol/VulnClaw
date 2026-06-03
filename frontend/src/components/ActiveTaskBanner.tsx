@@ -12,13 +12,13 @@ interface ActiveTaskBannerProps {
 }
 
 function eventText(event: TaskEvent | null): string {
-  if (!event) return "等待任务事件...";
+  if (!event) return "Waiting for task events.";
   const text = event.payload.text;
   const message = event.payload.message;
   const phase = event.payload.phase;
   if (typeof text === "string" && text.trim()) return text;
   if (typeof message === "string" && message.trim()) return message;
-  if (typeof phase === "string" && phase.trim()) return `当前阶段: ${formatPhaseLabel(phase)}`;
+  if (typeof phase === "string" && phase.trim()) return `Phase: ${formatPhaseLabel(phase)}`;
   return formatEventLabel(event.event);
 }
 
@@ -47,10 +47,7 @@ function eventBlockedAttempts(event: TaskEvent | null): number {
     };
   };
   const directCount = countConstraintViolations(payload.constraint_violation_events, payload.constraint_violations);
-  const summaryCount = countConstraintViolations(
-    payload.summary?.constraint_violation_events,
-    payload.summary?.constraint_violations,
-  );
+  const summaryCount = countConstraintViolations(payload.summary?.constraint_violation_events, payload.summary?.constraint_violations);
   if (directCount) return directCount;
   if (summaryCount) return summaryCount;
   const message = String(payload.message ?? payload.error ?? "");
@@ -58,11 +55,7 @@ function eventBlockedAttempts(event: TaskEvent | null): number {
 }
 
 function blockedAttempts(task: TaskRecord, event: TaskEvent | null): number {
-  return countConstraintViolations(
-    task.summary?.constraint_violation_events,
-    task.summary?.constraint_violations,
-    eventBlockedAttempts(event),
-  );
+  return countConstraintViolations(task.summary?.constraint_violation_events, task.summary?.constraint_violations, eventBlockedAttempts(event));
 }
 
 export function ActiveTaskBanner({ task, latestEvent, onOpenAdvanced, onOpenBoundary, onOpenReports, onOpenTarget, onStop }: ActiveTaskBannerProps) {
@@ -78,38 +71,38 @@ export function ActiveTaskBanner({ task, latestEvent, onOpenAdvanced, onOpenBoun
     <section className={`task-banner task-banner-${task.status}`}>
       <div className="task-banner-main">
         <div>
-          <span className="task-banner-kicker">当前安全检查</span>
+          <span className="task-banner-kicker">Active scan</span>
           <h3>{formatTaskTitle(task.command, task.target)}</h3>
           <p>{eventText(latestEvent)}</p>
         </div>
         <div className="task-banner-actions">
           <button type="button" className="secondary-btn" onClick={() => onOpenTarget(task.target)}>
-            查看风险
+            Results
           </button>
           <button
             type="button"
             className={`secondary-btn ${blocked > 0 ? "boundary-alert-btn" : ""}`}
             onClick={onOpenBoundary}
-            aria-label={blocked > 0 ? `查看 ${blocked} 次被阻止的越界尝试` : "查看安全边界"}
+            aria-label={blocked > 0 ? `View ${blocked} blocked boundary attempts` : "View safety boundary"}
           >
-            {blocked > 0 ? `已阻止 ${blocked} 次越界` : "安全边界"}
+            {blocked > 0 ? `${blocked} blocked` : "Boundary"}
           </button>
           {isFailed ? (
             <button type="button" className="danger-btn" onClick={onOpenAdvanced}>
-              查看技术日志
+              Open console
             </button>
           ) : isComplete ? (
             <button type="button" className="primary-btn" onClick={onOpenReports}>
-              查看报告
+              Reports
             </button>
           ) : (
             <button type="button" className="danger-btn" disabled={!canStop} onClick={onStop}>
-              停止
+              Stop
             </button>
           )}
         </div>
       </div>
-      <div className="task-progress" aria-label={`任务进度 ${progress}%`}>
+      <div className="task-progress" aria-label={`Task progress ${progress}%`}>
         <span style={{ width: `${progress}%` }} />
       </div>
     </section>

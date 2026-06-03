@@ -1,154 +1,154 @@
 import type { TaskCommand } from "../types/api";
 
 const COMMAND_LABELS: Record<TaskCommand, string> = {
-  recon: "快速摸底",
-  run: "标准检查",
-  scan: "深度扫描",
-  exploit: "深度验证",
-  persistent: "持续检查",
+  recon: "Quick Recon",
+  run: "Standard Scan",
+  scan: "Deep Scan",
+  exploit: "Verification",
+  persistent: "Continuous Scan",
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  recon: "信息收集",
-  run: "标准检查",
-  scan: "风险识别",
-  exploit: "验证利用",
-  persistent: "持续检查",
-  post_exploitation: "后渗透动作",
+  recon: "Recon",
+  run: "Standard Scan",
+  scan: "Scan",
+  exploit: "Verify",
+  persistent: "Continuous Scan",
+  post_exploitation: "Post-exploitation",
 };
 
 const PHASE_LABELS: Record<string, string> = {
-  scope: "确认授权范围",
-  recon: "收集公开信息",
-  scan: "识别服务和入口",
-  verify: "分析潜在风险",
-  exploit: "验证风险影响",
-  report: "整理报告",
+  scope: "Scope",
+  recon: "Recon",
+  scan: "Scan",
+  verify: "Verify",
+  exploit: "Exploit",
+  report: "Report",
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "排队中",
-  running: "检查中",
-  completed: "已完成",
-  failed: "未完成",
-  stopped: "已停止",
+  pending: "Queued",
+  running: "Running",
+  completed: "Completed",
+  failed: "Failed",
+  stopped: "Stopped",
 };
 
 const FINDING_STATUS_LABELS: Record<string, string> = {
-  verified: "已验证",
-  pending: "待复核",
-  candidate: "线索",
-  manual_review: "人工复核",
-  dismissed: "已排除",
-  false_positive: "误报",
+  verified: "Verified",
+  pending: "Pending",
+  candidate: "Candidate",
+  manual_review: "Manual review",
+  dismissed: "Dismissed",
+  false_positive: "False positive",
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  task_started: "检查已启动",
-  task_progress: "检查进展",
-  task_message: "任务消息",
-  task_completed: "检查已完成",
-  task_failed: "检查失败",
-  task_stopped: "检查已停止",
+  task_started: "Task started",
+  task_progress: "Task progress",
+  task_message: "Task message",
+  task_completed: "Task completed",
+  task_failed: "Task failed",
+  task_stopped: "Task stopped",
 };
 
 const SEVERITY_LABELS: Record<string, string> = {
-  critical: "严重",
-  high: "高风险",
-  medium: "中风险",
-  warn: "需关注",
-  warning: "需关注",
-  low: "低风险",
-  info: "提示",
+  critical: "Critical",
+  high: "High",
+  medium: "Medium",
+  warn: "Warn",
+  warning: "Warn",
+  low: "Low",
+  info: "Info",
 };
 
 const MCP_HEALTH_LABELS: Record<string, string> = {
-  healthy: "可用",
-  degraded: "降级可用",
-  unavailable: "不可用",
-  unknown: "未知",
+  healthy: "Healthy",
+  degraded: "Degraded",
+  unavailable: "Offline",
+  unknown: "Unknown",
 };
 
 const MCP_MODE_LABELS: Record<string, string> = {
-  local: "内置本地能力",
-  placeholder: "占位模式",
-  sdk: "已连接工具服务",
-  sse: "远程事件服务",
+  local: "Local",
+  placeholder: "Placeholder",
+  sdk: "SDK",
+  sse: "SSE",
 };
 
 export function formatTaskCommand(command: string | null | undefined): string {
-  if (!command) return "安全检查";
-  return COMMAND_LABELS[command as TaskCommand] ?? "自定义检查";
+  if (!command) return "Scan";
+  return COMMAND_LABELS[command as TaskCommand] ?? "Custom Scan";
 }
 
 export function formatTaskTitle(command: string | null | undefined, target: string): string {
-  return `${formatTaskCommand(command)} · ${target}`;
+  return `${formatTaskCommand(command)} - ${target}`;
 }
 
 export function formatActionLabel(action: string): string {
   return ACTION_LABELS[action] ?? action;
 }
 
-export function formatActionList(actions: string[] | undefined, fallback = "按系统默认边界"): string {
+export function formatActionList(actions: string[] | undefined, fallback = "Default scope"): string {
   if (!actions?.length) return fallback;
-  return actions.map(formatActionLabel).join("、");
+  return actions.map(formatActionLabel).join(", ");
 }
 
 export function formatPhaseLabel(phase: string | null | undefined): string {
-  if (!phase) return "暂无阶段";
+  if (!phase) return "No phase";
   const normalized = phase.toLowerCase();
   const matchedKey = Object.keys(PHASE_LABELS).find((key) => normalized.includes(key));
   return PHASE_LABELS[normalized] ?? (matchedKey ? PHASE_LABELS[matchedKey] : phase);
 }
 
 export function formatTaskStatus(status: string | null | undefined): string {
-  if (!status) return "空闲";
+  if (!status) return "Idle";
   return STATUS_LABELS[status] ?? status;
 }
 
 export function formatFindingStatus(status: string | null | undefined): string {
-  if (!status) return "待复核";
+  if (!status) return "Pending";
   const normalized = status.toLowerCase();
   const matchedKey = Object.keys(FINDING_STATUS_LABELS).find((key) => normalized.includes(key));
   return FINDING_STATUS_LABELS[normalized] ?? (matchedKey ? FINDING_STATUS_LABELS[matchedKey] : status);
 }
 
 export function formatEventLabel(event: string | null | undefined): string {
-  if (!event) return "任务事件";
+  if (!event) return "Task event";
   return EVENT_LABELS[event] ?? event;
 }
 
 export function formatSeverityLabel(severity: string | null | undefined): string {
-  if (!severity) return "提示";
+  if (!severity) return "Info";
   const normalized = severity.toLowerCase();
   const matchedKey = Object.keys(SEVERITY_LABELS).find((key) => normalized.includes(key));
   return SEVERITY_LABELS[normalized] ?? (matchedKey ? SEVERITY_LABELS[matchedKey] : severity);
 }
 
 export function formatMcpHealth(status: string | null | undefined): string {
-  if (!status) return "未知";
+  if (!status) return "Unknown";
   return MCP_HEALTH_LABELS[status] ?? status;
 }
 
 export function formatMcpExecutionMode(mode: string | null | undefined): string {
-  if (!mode) return "未知";
+  if (!mode) return "Unknown";
   return MCP_MODE_LABELS[mode] ?? mode;
 }
 
 export function formatResumeStrategy(strategy: string | null | undefined): string {
-  if (!strategy) return "暂无恢复建议";
+  if (!strategy) return "No resume guidance";
   const normalized = strategy.toLowerCase();
-  if (normalized.includes("stop") || normalized.includes("complete")) return "可以结束本次检查";
-  if (normalized.includes("verify")) return "建议优先复核关键线索";
-  if (normalized.includes("exploit")) return "需要明确授权后再验证";
-  if (normalized.includes("scan")) return "建议继续做风险识别";
-  if (normalized.includes("recon")) return "建议补充信息收集";
-  if (normalized.includes("continue") || normalized.includes("resume")) return "可以继续沿当前方向检查";
+  if (normalized.includes("stop") || normalized.includes("complete")) return "Can end current scan";
+  if (normalized.includes("verify")) return "Review verified findings first";
+  if (normalized.includes("exploit")) return "Verify authorization before validation";
+  if (normalized.includes("scan")) return "Continue risk discovery";
+  if (normalized.includes("recon")) return "Add more recon";
+  if (normalized.includes("continue") || normalized.includes("resume")) return "Resume from current state";
   return strategy;
 }
 
 export function formatConstraintSummary(constraints: Record<string, unknown> | undefined): string {
-  if (!constraints || !Object.keys(constraints).length) return "未设置额外边界";
+  if (!constraints || !Object.keys(constraints).length) return "No extra boundary";
   const labels: string[] = [];
   const onlyHost = constraints.allowed_hosts ?? constraints.only_host;
   const onlyPath = constraints.allowed_paths ?? constraints.only_path;
@@ -157,14 +157,14 @@ export function formatConstraintSummary(constraints: Record<string, unknown> | u
   const blockedPath = constraints.blocked_paths ?? constraints.blocked_path;
   const allowActions = constraints.allowed_actions ?? constraints.allow_actions;
   const blockActions = constraints.blocked_actions ?? constraints.block_actions;
-  if (onlyHost) labels.push(`仅主机 ${formatConstraintValue(onlyHost)}`);
-  if (onlyPath) labels.push(`仅路径 ${formatConstraintValue(onlyPath)}`);
-  if (onlyPort) labels.push(`仅端口 ${formatConstraintValue(onlyPort)}`);
-  if (blockedHost) labels.push(`排除主机 ${formatConstraintValue(blockedHost)}`);
-  if (blockedPath) labels.push(`排除路径 ${formatConstraintValue(blockedPath)}`);
-  if (Array.isArray(allowActions)) labels.push(`允许 ${formatActionList(allowActions.map(String))}`);
-  if (Array.isArray(blockActions)) labels.push(`禁止 ${formatActionList(blockActions.map(String))}`);
-  return labels.length ? labels.join("；") : "已设置自定义边界";
+  if (onlyHost) labels.push(`host ${formatConstraintValue(onlyHost)}`);
+  if (onlyPath) labels.push(`path ${formatConstraintValue(onlyPath)}`);
+  if (onlyPort) labels.push(`port ${formatConstraintValue(onlyPort)}`);
+  if (blockedHost) labels.push(`block host ${formatConstraintValue(blockedHost)}`);
+  if (blockedPath) labels.push(`block path ${formatConstraintValue(blockedPath)}`);
+  if (Array.isArray(allowActions)) labels.push(`allow ${formatActionList(allowActions.map(String))}`);
+  if (Array.isArray(blockActions)) labels.push(`block ${formatActionList(blockActions.map(String))}`);
+  return labels.length ? labels.join(", ") : "Custom boundary";
 }
 
 export function countConstraintViolations(

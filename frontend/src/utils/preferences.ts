@@ -20,7 +20,7 @@ const STORAGE_KEY = "vulnclaw.ui.preferences";
 export const UI_PREFERENCES_EVENT = "vulnclaw.ui.preferences.updated";
 
 export const DEFAULT_UI_PREFERENCES: UiPreferences = {
-  language: "zh-CN",
+  language: "en-US",
   defaultCheckMode: "standard",
   reportFormat: "markdown",
   showTechnicalLogs: false,
@@ -41,7 +41,7 @@ export function loadUiPreferences(): UiPreferences {
     if (!raw) return DEFAULT_UI_PREFERENCES;
     const parsed = JSON.parse(raw) as Partial<UiPreferences>;
     return {
-      language: parsed.language === "en-US" ? "en-US" : "zh-CN",
+      language: parsed.language === "zh-CN" ? "zh-CN" : "en-US",
       defaultCheckMode: isCheckMode(parsed.defaultCheckMode) ? parsed.defaultCheckMode : DEFAULT_UI_PREFERENCES.defaultCheckMode,
       reportFormat: parsed.reportFormat === "html" ? "html" : "markdown",
       showTechnicalLogs: Boolean(parsed.showTechnicalLogs),

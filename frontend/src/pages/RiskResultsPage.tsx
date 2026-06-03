@@ -69,67 +69,67 @@ function extractEvidence(raw: Record<string, unknown>): string {
   const evidence = raw.evidence;
   if (typeof evidence === "string" && evidence.trim()) return evidence;
   if (Array.isArray(evidence) && evidence.length) return evidence.map(String).slice(0, 3).join(" / ");
-  return asText(raw.description, "暂未整理证据摘要，可在技术详情中查看原始记录。");
+  return asText(raw.description, "Not summarized yet.");
 }
 
 function extractFindingCards(rawFindings: unknown): FindingCard[] {
   if (!Array.isArray(rawFindings)) return [];
   return rawFindings.slice(0, 24).map((item, index) => {
     const raw = item && typeof item === "object" ? item as Record<string, unknown> : {};
-    const title = asText(raw.title, `风险线索 ${index + 1}`);
+    const title = asText(raw.title, `Finding ${index + 1}`);
     return {
       id: asText(raw.finding_id, `${title}-${index}`),
       title,
       severity: normalizeSeverity(raw.severity),
       status: asText(raw.verification_status, asText(raw.lifecycle_status, raw.verified ? "verified" : "pending")),
       evidence: extractEvidence(raw),
-      impact: asText(raw.impact, asText(raw.risk, "需要结合目标上下文判断影响范围。")),
-      recommendation: asText(raw.recommendation, asText(raw.remediation, "建议人工复核该线索，并按最小暴露面原则修复。")),
-      type: asText(raw.vuln_type, asText(raw.category, "未分类")),
+      impact: asText(raw.impact, asText(raw.risk, "Impact needs review.")),
+      recommendation: asText(raw.recommendation, asText(raw.remediation, "Validate and patch the issue.")),
+      type: asText(raw.vuln_type, asText(raw.category, "Uncategorized")),
     };
   });
 }
 
 function resultConclusion(verified: number, pending: number, manualReview: number): string {
-  if (verified > 0) return `发现 ${verified} 个已验证风险，建议优先处理。`;
-  if (manualReview > 0) return `有 ${manualReview} 个高价值线索需要人工复核。`;
-  if (pending > 0) return `发现 ${pending} 个待复核线索，暂未确认可利用风险。`;
-  return "暂未发现明确风险，可结合更深模式继续检查。";
+  if (verified > 0) return `Verified findings: ${verified}`;
+  if (manualReview > 0) return `Manual review required: ${manualReview}`;
+  if (pending > 0) return `Pending items: ${pending}`;
+  return "No confirmed findings yet";
 }
 
 function actionCardFromSignal(signal: string): ActionCard {
   const normalized = signal.toLowerCase();
   if (normalized.includes("report")) {
     return {
-      title: "生成并保存报告",
-      copy: "把本次检查结论整理成可交付的 Markdown / HTML 报告。",
+      title: "Generate report",
+      copy: "Package the current assessment into Markdown or HTML.",
       tone: "primary",
     };
   }
   if (normalized.includes("boundary") || normalized.includes("constraint")) {
     return {
-      title: "查看安全边界",
-      copy: "确认主机、端口、路径和动作范围是否仍符合授权。",
+      title: "Review scope",
+      copy: "Check host, port, path, and action limits.",
       tone: "safe",
     };
   }
   if (normalized.includes("verify") || normalized.includes("manual")) {
     return {
-      title: "人工复核关键线索",
-      copy: "优先确认高价值线索是否真实可复现，再决定是否扩大验证。",
+      title: "Manual review",
+      copy: "Confirm high-value lines before expanding verification.",
       tone: "warn",
     };
   }
   if (normalized.includes("scan") || normalized.includes("recon")) {
     return {
-      title: "继续补充检查",
-      copy: "沿当前范围继续收集入口、服务和潜在风险线索。",
+      title: "Continue scanning",
+      copy: "Keep collecting entry points and weak signals.",
       tone: "primary",
     };
   }
   return {
     title: signal,
-    copy: "来自后端恢复计划的建议动作，建议结合当前目标上下文判断。",
+    copy: "Follow the current recovery plan.",
     tone: "primary",
   };
 }
@@ -138,15 +138,15 @@ function buildActionCards(actions: string[], pending: number, manualReview: numb
   const cards = actions.slice(0, 6).map(actionCardFromSignal);
   if (!cards.length && (pending > 0 || manualReview > 0)) {
     cards.push({
-      title: "先复核待确认线索",
-      copy: "当前存在待复核内容，建议先确认证据和影响范围，再生成正式报告。",
+      title: "Review pending items",
+      copy: "Resolve pending evidence before generating the final report.",
       tone: "warn",
     });
   }
   if (!cards.length) {
     cards.push({
-      title: "生成报告或继续观察",
-      copy: "当前没有明确下一步动作，可生成报告留档，或在更明确授权范围内继续检查。",
+      title: "Generate report",
+      copy: "No next step is selected yet.",
       tone: "safe",
     });
   }
@@ -206,7 +206,7 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
       setGeneratedReport({ format: reportFormat, path: result.path });
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "报告生成失败");
+      setError(err instanceof Error ? err.message : "Report generation failed");
     } finally {
       setGenerating(false);
     }
@@ -215,12 +215,11 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
   return (
     <section className="risk-page">
       <SectionCard
-        title="目标风险概览"
-        copy="优先展示用户真正关心的结论、风险数量、证据和下一步。"
-        aside={<span className="status-badge">{target ? formatPhaseLabel(target.phase) : "等待目标"}</span>}
+        title="Findings"
+        aside={<span className="status-badge">{target ? formatPhaseLabel(target.phase) : "Waiting"}</span>}
       >
         <label className="field">
-          <span>目标</span>
+          <span>Target</span>
           <select
             value={targetValue ?? ""}
             onChange={(event) => {
@@ -231,7 +230,7 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
               setError(null);
             }}
           >
-            <option value="">选择一个目标</option>
+            <option value="">Select a target</option>
             {targetsQuery.data?.map((item) => (
               <option key={item.target} value={item.target}>
                 {item.target}
@@ -244,66 +243,63 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
           <>
             <div className="risk-hero">
               <div>
-                <span className="pill">安全结论</span>
+                <span className="pill">Summary</span>
                 <h3>{resultConclusion(target.verified_count, target.pending_count, target.manual_review_count)}</h3>
-                <p>
-                  VulnClaw 已将目标状态、验证结果、待复核线索和安全边界信息合并到当前视图。
-                </p>
               </div>
               <div className="risk-score">
                 <strong>{criticalOrHigh}</strong>
-                <span>高优先级风险</span>
+                <span>High priority</span>
               </div>
             </div>
 
             <div className="stats-grid">
               <article className="stat">
-                <span className="stat-label">已验证风险</span>
+                <span className="stat-label">Verified</span>
                 <strong>{target.verified_count}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">待复核线索</span>
+                <span className="stat-label">Pending</span>
                 <strong>{target.pending_count}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">人工复核</span>
+                <span className="stat-label">Manual review</span>
                 <strong>{target.manual_review_count}</strong>
               </article>
               <article className="stat">
-                <span className="stat-label">边界拦截</span>
+                <span className="stat-label">Boundary blocks</span>
                 <strong>{boundaryBlocks}</strong>
               </article>
             </div>
 
             <div className="button-row">
               <button type="button" className="primary-btn" disabled={generating} onClick={handleGenerateReport}>
-                {generating ? "生成中..." : `生成 ${reportFormat === "html" ? "HTML" : "Markdown"} 报告`}
+                {generating ? "Generating..." : "Generate report"}
               </button>
               <button type="button" className="secondary-btn" onClick={() => onOpenReports()}>
-                查看报告中心
+                Open reports
               </button>
               <button type="button" className="secondary-btn" onClick={onOpenBoundary}>
-                查看安全边界
+                Open scope
               </button>
             </div>
 
             {generatedReport && (
               <div className="report-delivery-card risk-delivery-card">
                 <div>
-                  <span>交付状态</span>
-                  <strong>报告已生成</strong>
+                  <span>Status</span>
+                  <strong>Report generated</strong>
                 </div>
                 <div>
-                  <span>报告格式</span>
+                  <span>Format</span>
                   <strong>{generatedReport.format === "html" ? "HTML" : "Markdown"}</strong>
                 </div>
                 <div>
-                  <span>文件位置</span>
+                  <span>Path</span>
                   <strong>{generatedReport.path}</strong>
                 </div>
                 <div className="risk-delivery-action">
                   <button className="primary-btn" onClick={() => onOpenReports(generatedReport.path)} type="button">
-                    去报告中心预览
+                    Open report
                   </button>
                 </div>
               </div>
@@ -312,12 +308,11 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
           </>
         ) : (
           <div className="empty-state risk-empty-state">
-            <strong>{targetQuery.isLoading ? "正在加载目标..." : "还没有可展示的目标结果"}</strong>
+            <strong>{targetQuery.isLoading ? "Loading target..." : "No target selected"}</strong>
             {!targetQuery.isLoading && (
               <>
-                <span>先从首页输入授权目标并完成一次检查，VulnClaw 会把风险、证据和下一步建议整理到这里。</span>
                 <button className="secondary-btn" type="button" onClick={onOpenHome}>
-                  回首页开始检查
+                  New scan
                 </button>
               </>
             )}
@@ -327,7 +322,7 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
 
       {target && (
         <div className="split-grid">
-          <SectionCard title="风险列表" copy="按严重程度和验证状态展示，技术记录默认收起。">
+          <SectionCard title="Findings">
             <div className="risk-list">
               {findings.length ? (
                 findings.map((finding) => (
@@ -341,39 +336,39 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
                     </div>
                     <div className="risk-detail-grid">
                       <div>
-                        <strong>类型</strong>
+                        <strong>Type</strong>
                         <span>{finding.type}</span>
                       </div>
                       <div>
-                        <strong>证据摘要</strong>
+                        <strong>Evidence</strong>
                         <span>{finding.evidence}</span>
                       </div>
                       <div>
-                        <strong>影响范围</strong>
+                        <strong>Impact</strong>
                         <span>{finding.impact}</span>
                       </div>
                       <div>
-                        <strong>修复建议</strong>
+                        <strong>Fix</strong>
                         <span>{finding.recommendation}</span>
                       </div>
                     </div>
                   </article>
                 ))
               ) : (
-                <div className="empty-state">当前目标还没有结构化风险项。</div>
+                <div className="empty-state">No structured findings yet.</div>
               )}
             </div>
           </SectionCard>
 
-          <SectionCard title="下一步建议" copy="把 resume plan 和治理信号转成可执行建议。">
+          <SectionCard title="Next">
             <div className="list dense-list">
               <div className="list-item">
-                <strong>恢复策略</strong>
+                <strong>Resume plan</strong>
                 <span>{formatResumeStrategy(target.resume_strategy || preview?.resume_strategy)}</span>
-                <span className="muted-inline">{target.resume_reason || preview?.resume_reason || "暂无说明"}</span>
+                <span className="muted-inline">{target.resume_reason || preview?.resume_reason || "No reason recorded"}</span>
               </div>
               <div className="list-item">
-                <strong>推荐动作</strong>
+                <strong>Recommended actions</strong>
                 <div className="risk-action-grid">
                   {actionCards.map((item) => (
                     <article key={`${item.title}-${item.copy}`} className={`risk-action-card risk-action-card-${item.tone}`}>
@@ -384,15 +379,15 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
                 </div>
               </div>
               <div className="list-item">
-                <strong>优先目标</strong>
+                <strong>Priority targets</strong>
                 {preview?.priority_targets.length ? (
                   preview.priority_targets.slice(0, 6).map((item) => <span key={item}>{item}</span>)
                 ) : (
-                  <span className="muted-inline">暂无优先目标。</span>
+                  <span className="muted-inline">No priority targets.</span>
                 )}
               </div>
               <div className="list-item">
-                <strong>安全边界</strong>
+                <strong>Scope</strong>
                 <span className="muted-inline">{formatConstraintSummary(target.constraints)}</span>
               </div>
             </div>
@@ -402,11 +397,10 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
 
       {target && (
         <SectionCard
-          title="技术详情"
-          copy="高级用户可以展开查看后端保存的原始状态记录，普通用户默认不需要阅读。"
+          title="Raw data"
           aside={
             <button type="button" className="text-btn inline-text-btn" onClick={() => setShowRaw((value) => !value)}>
-              {showRaw ? "收起" : "展开"}
+              {showRaw ? "Collapse" : "Expand"}
             </button>
           }
         >
@@ -415,7 +409,7 @@ export function RiskResultsPage({ selectedTarget, onSelectTarget, onOpenHome, on
               <pre>{JSON.stringify(target.raw, null, 2)}</pre>
             </div>
           ) : (
-            <div className="empty-state">技术记录已收起。</div>
+            <div className="empty-state">Raw state collapsed.</div>
           )}
         </SectionCard>
       )}

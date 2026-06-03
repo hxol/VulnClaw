@@ -25,19 +25,18 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     return (
       <main className="app-fallback-page">
         <section className="app-fallback-card">
-          <span className="pill">界面保护</span>
-          <h1>VulnClaw 界面遇到问题</h1>
+          <span className="pill">UI guard</span>
+          <h1>VulnClaw UI hit a rendering error</h1>
           <p>
-            当前页面渲染时出现异常。已保存的目标状态、报告和任务记录不会因此删除，
-            可以先刷新页面恢复界面，再从历史或报告中心继续查看结果。
+            Saved targets, reports, and task history remain intact. Reload the UI, then continue from History or Reports.
           </p>
           <div className="app-fallback-actions">
             <button className="primary-btn" type="button" onClick={() => window.location.reload()}>
-              刷新界面
+              Reload UI
             </button>
           </div>
           <details>
-            <summary>查看技术错误</summary>
+            <summary>Technical error</summary>
             <pre>{this.state.error.message}</pre>
           </details>
         </section>

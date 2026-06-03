@@ -16,15 +16,17 @@ export function Sidebar<T extends string>({ activeView, activeNavView = activeVi
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-badge">VC</div>
+        <div className="brand-badge">
+          <img src="/icons/sidebar/brand-shield.svg" alt="" aria-hidden="true" />
+        </div>
         <div>
           <div className="brand-kicker">VulnClaw</div>
-          <h1>安全测试助手</h1>
-          <p>授权范围内的风险检查与报告</p>
+          <h1>VulnClaw</h1>
+          <p>Scan workspace</p>
         </div>
       </div>
 
-      <nav className="nav-list" aria-label="主导航">
+      <nav className="nav-list" aria-label="main navigation">
         {nav.map((item) => (
           <button
             key={item.key}
@@ -32,18 +34,20 @@ export function Sidebar<T extends string>({ activeView, activeNavView = activeVi
             className={`nav-item ${activeNavView === item.key ? "active" : ""}`}
             onClick={() => onSelectView(item.key)}
           >
-            <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+            <span className="nav-icon" aria-hidden="true">
+              <img src={item.icon} alt="" />
+            </span>
             <span>
               <strong>{item.label}</strong>
-              <small>{item.description}</small>
+              {item.description && <small>{item.description}</small>}
             </span>
           </button>
         ))}
       </nav>
 
       <div className="sidebar-footer">
-        <span>授权优先</span>
-        <strong>本地 Web 工作台</strong>
+        <span>Local</span>
+        <strong>Ready</strong>
       </div>
     </aside>
   );
